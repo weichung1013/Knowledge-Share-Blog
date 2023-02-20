@@ -113,6 +113,9 @@ Playbook由一連串的plays所組成，
 ### Tasks
 Task為組成一個Playbook的最小單位，每個Task都必須包含一個==Key==。
 Key代表了模組(module)的名稱以及要傳遞到模組的參數值。
+
+
+以下是一個task的範例：
 ```
 - name: Install required packages
   apt:
@@ -121,4 +124,87 @@ Key代表了模組(module)的名稱以及要傳遞到模組的參數值。
     update_cache: true
   loop: "{{ required_package }}"
 ```
+
+其中name是完全optional的，但是寫出來可讓同事(以及半年後的自己)比較能了解這個task的目的是甚麼。
+apt就是前面講的key，表示我們要用apt這個模組來下達指令
+
+### Modules
+Module為Ansible原生已經包裝好的腳本，常見的有：
+* apt: 使用apt套件管理員安裝或移除套件
+* copy: 從本地機器複製檔案到本機其他位置或是其他主機
+* file: 設定檔案、連結或目錄的屬性
+* template: 使用Jinja模板生成檔案，並複製到主機中
+
+所以前面例子的apt其實就是在command line打入
+```
+$apt install {{package1}} {{package2}} {{package3}}... --latest
+```
+
+Ansible原生沒有包含的模組也可以用plugin的形式來擴充
+
+### Plugins
+就如同許多開源專案一樣，許多你想用的功能都已經有其他人幫你寫好了，只要下載下來安裝就可以使用。
+例如常見的docker：
+```
+- name: Create config foo (from a file on the target machine)
+  community.docker.docker_config:
+    name: foo
+    data_src: /path/to/config/file
+    state: present
+```
+
+docker前面的==community==就表示這是由開源社群所撰寫的plugin。
+
+### Roles
+隨著管理的規模和複雜度越來越高，Ansible也提供使用者可以用role來區分包裝不同的tasks
+讓管理pipeline和task間的相依性更加容易
+甚至使用者還可以去[Ansible Galaxy](https://galaxy.ansible.com/home)來下載其他人已經定義好的role來直接套用在專案使用。
+
+### Facts (or Vars?)
+使用者可以自訂義環境變數來套用在Ansible的模板裡
+有許多方式可以定義環境變數，以下簡單舉例：
+1. 直接寫在playbook中
+```
+vars:
+    key_file: /etc/nginx/ssl/test.key
+    cert_file: /etc/nginx/ssl/test.crt
+    server_name: localhost
+```
+
+2. 定義一個變數檔案
+```
+vars_files:
+    - nginx,yml
+```
+
+3. 執行 playbook 的時候設定
+```
+$ ansible-playbook example.yml -e token=12345
+```
+
+4. 使用 set_fact
+```
+- set_fact: app_version={{ example_app_versnio }}
+```
+
+要在run-time確定目前的變數是甚麼，可用debug key來印出變數的值：
+```
+- name: Install path
+    debug:
+      msg: "Install path is {{ install_path }}."
+```
+:::success
+:bulb: 定義變數的方式不同，其優先程度也不相同，例如直接用command line送進去的變數就會覆蓋掉playbook裡面原本有寫的變數
+:::
+
+### Anisble的結構
+Ansible的結構如果圖形化之後大致是長這樣：
+![](https://i.imgur.com/EwzS2J3.png)[圖片出處](https://www.clickittech.com/tutorial/ansible-playbook-basic/)
+
+## 實際上來跑跑看：
+
+
+# Reference
+[Ansible Documentation](https://docs.ansible.com/ansible/latest/dev_guide/index.html);<br/>
+[Ansible建置與執行 O'Reilly](https://www.amazon.com/Ansible-Automating-Configuration-Management-Deployment/dp/1491915323);<br/>
 ###### tags: `ansible`,`note`
