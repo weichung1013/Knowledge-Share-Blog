@@ -5,20 +5,24 @@ tags: ansible,note
 ---
 
 ## Why Ansible
+
 ### 在一個 AWS instance 上架設伺服器：
+
 1. 安裝環境 (Python、Docker...)
 2. 設定防火牆、安裝/匯入認證
 3. 安裝 AWS Cli tool
 4. 設定 AWS Cli tool
-5. Pull docker images
-....
-....
-....
+5. Pull docker images<br/>
+   ....<br/>
+   ....<br/>
+   ....<br/>
 
 ### 在四個 AWS instance 上架設伺服器：
+
 重複以上步驟 x4
 
 ### 在一百個 AWS instance 上架設伺服器：
+
 重複以上步驟 x100
 
 <iframe width="420" height="315"
@@ -28,8 +32,10 @@ src="https://www.youtube.com/embed/IMUT8EhTqJM">
 :::success
 :point_right: 需要一個工具可以重複執行相同步驟
 :::
+
 ###
-``` mermaid
+
+```mermaid
 graph LR;
 安裝環境-->防火牆設定A;
 安裝環境-->防火牆設定B;
