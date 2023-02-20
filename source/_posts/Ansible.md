@@ -99,6 +99,8 @@ Ansible 是一套以 Python 為基底開發的組態管理工具
 * 易讀易懂：如前述所說，Ansible playbook (後面會在說明playbook是甚麼)的語法為YAML，YAML一開始就是被設計成容易編寫和閱讀的(雖然有些人會不認同XD)。
 * 容易學習：只需要了解如何在Linux環境下工作以及理解如何使用SSH操控遠端機器就可以使用。
 
+# How to use Ansible
+
 ## Ansible的基本架構：
 ### Playbook
 Playbook是Ansible世界的一個專有名詞，
@@ -109,6 +111,14 @@ Playbook由一連串的plays所組成，
 * 一組想要進行組態配置的==主機(hosts)==
 * 要在這些主機上執行的一系列==任務(tasks)==
 ### Tasks
-Task為組成一個Playbook的最小單位，每個Task都必須包含一個==Key==表示
-# How to use Ansible
+Task為組成一個Playbook的最小單位，每個Task都必須包含一個==Key==。
+Key代表了模組(module)的名稱以及要傳遞到模組的參數值。
+```
+- name: Install required packages
+  apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: true
+  loop: "{{ required_package }}"
+```
 ###### tags: `ansible`,`note`
