@@ -779,7 +779,9 @@ playbook/
     job: "bash {{ install_path }}/smart-dock/scripts/healthCheck.sh"
     cron_file: smartdock-cron-job
 ```
-
+## 下期預告
+1. 如何使用 Ansible Galaxy
+2. 遠端調控多個 hosts 的組態
 ## Reference
 [Ansible Documentation](https://docs.ansible.com/ansible/latest/dev_guide/index.html);<br/>
 [Ansible建置與執行 O'Reilly](https://www.amazon.com/Ansible-Automating-Configuration-Management-Deployment/dp/1491915323);<br/>
