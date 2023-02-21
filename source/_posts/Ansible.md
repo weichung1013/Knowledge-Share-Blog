@@ -3,8 +3,9 @@ title: Ansible 學習筆記 01
 date: 2023-02-20 10:48:15
 tags: ansible,note
 ---
+# Ansible 簡介
 
-# Why Ansible
+## Why Ansible
 
 ### 在一個 AWS instance 上架設伺服器：
 
@@ -84,33 +85,33 @@ graph LR;
 :point_right: 最好易懂易讀，容易上手
 :::
 
-# What is Ansible
+## What is Ansible
 
-## 甚麼是 Ansible：
+### 甚麼是 Ansible：
 :::warning
 Ansible 是一套以 Python 為基底開發的組態管理工具
 :::
 ![](https://i.imgur.com/PyzqnDN.jpg)
 
-## Ansible的優點：
+### Ansible的優點：
 * 免費: Anisble是一套免費的開源工具 (Redhat的AAP和Ansible Tower則是收費工具)。
 * 模板化的設計: Anisble主要使用==YAML==和==Jinja2==模板語法來進行撰寫，可重複使用模板搭配不同的環境變數來執行各種IT工作。
 * 不需在每個節點上安裝： 被控制的節點只需要安裝Python和SSH就可以統一由控制節點來進行控管，節省資源與時間。
 * 易讀易懂：如前述所說，Ansible playbook (後面會在說明playbook是甚麼)的語法為YAML，YAML一開始就是被設計成容易編寫和閱讀的(雖然有些人會不認同XD)。
 * 容易學習：只需要了解如何在Linux環境下工作以及理解如何使用SSH操控遠端機器就可以使用。
 
-# How to use Ansible
+## How to use Ansible
 
-## Ansible的基本架構：
-### Playbook
+### Ansible的基本架構：
+#### Playbook
 Playbook是Ansible世界的一個專有名詞，
 代表Ansible用來配置組態的一個腳本，以YAML來進行撰寫。
-### Plays
+#### Plays
 Playbook由一連串的plays所組成，
 每個Play包含：
 * 一組想要進行組態配置的==主機(hosts)==
 * 要在這些主機上執行的一系列==任務(tasks)==
-### Tasks
+#### Tasks
 Task為組成一個Playbook的最小單位，每個Task都必須包含一個==Key==。
 Key代表了模組(module)的名稱以及要傳遞到模組的參數值。
 
@@ -128,7 +129,7 @@ Key代表了模組(module)的名稱以及要傳遞到模組的參數值。
 其中name是完全optional的，但是寫出來可讓同事(以及半年後的自己)比較能了解這個task的目的是甚麼。
 apt就是前面講的key，表示我們要用apt這個模組來下達指令
 
-### Modules
+#### Modules
 Module為Ansible原生已經包裝好的腳本，常見的有：
 * apt: 使用apt套件管理員安裝或移除套件
 * copy: 從本地機器複製檔案到本機其他位置或是其他主機
@@ -142,7 +143,7 @@ $apt install {{package1}} {{package2}} {{package3}}... --latest
 
 Ansible原生沒有包含的模組也可以用plugin的形式來擴充
 
-### Plugins
+#### Plugins
 就如同許多開源專案一樣，許多你想用的功能都已經有其他人幫你寫好了，只要下載下來安裝就可以使用。
 例如常見的docker：
 ```
@@ -155,12 +156,12 @@ Ansible原生沒有包含的模組也可以用plugin的形式來擴充
 
 docker前面的==community==就表示這是由開源社群所撰寫的plugin。
 
-### Roles
+#### Roles
 隨著管理的規模和複雜度越來越高，Ansible也提供使用者可以用role來區分包裝不同的tasks
 讓管理pipeline和task間的相依性更加容易
 甚至使用者還可以去[Ansible Galaxy](https://galaxy.ansible.com/home)來下載其他人已經定義好的role來直接套用在專案使用。
 
-### Facts (or Vars?)
+#### Facts (or Vars?)
 使用者可以自訂義環境變數來套用在Ansible的模板裡
 有許多方式可以定義環境變數，以下簡單舉例：
 1. 直接寫在playbook中
@@ -197,14 +198,14 @@ $ ansible-playbook example.yml -e token=12345
 :bulb: 定義變數的方式不同，其優先程度也不相同，例如直接用command line送進去的變數就會覆蓋掉playbook裡面原本有寫的變數
 :::
 
-### Anisble的結構
+#### Anisble的結構
 Ansible的結構如果圖形化之後大致是長這樣：
 ![](https://i.imgur.com/EwzS2J3.png)[圖片出處](https://www.clickittech.com/tutorial/ansible-playbook-basic/)
 
-## 實際上來跑跑看：
+### 實際上來跑跑看：
 
 
-# Reference
+## Reference
 [Ansible Documentation](https://docs.ansible.com/ansible/latest/dev_guide/index.html);<br/>
 [Ansible建置與執行 O'Reilly](https://www.amazon.com/Ansible-Automating-Configuration-Management-Deployment/dp/1491915323);<br/>
 ###### tags: `ansible`,`note`
