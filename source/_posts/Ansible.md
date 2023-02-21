@@ -117,7 +117,7 @@ Key代表了模組(module)的名稱以及要傳遞到模組的參數值。
 
 
 以下是一個task的範例：
-```
+```yaml
 - name: Install required packages
   apt:
     name: "{{ item }}"
@@ -137,7 +137,7 @@ Module為Ansible原生已經包裝好的腳本，常見的有：
 * template: 使用Jinja模板生成檔案，並複製到主機中
 
 所以前面例子的apt其實就是在command line打入
-```
+```s
 $apt install {{package1}} {{package2}} {{package3}}... --latest
 ```
 
@@ -146,7 +146,7 @@ Ansible原生沒有包含的模組也可以用plugin的形式來擴充
 #### Plugins
 就如同許多開源專案一樣，許多你想用的功能都已經有其他人幫你寫好了，只要下載下來安裝就可以使用。
 例如常見的docker：
-```
+```yaml
 - name: Create config foo (from a file on the target machine)
   community.docker.docker_config:
     name: foo
@@ -165,7 +165,7 @@ docker前面的==community==就表示這是由開源社群所撰寫的plugin。
 使用者可以自訂義環境變數來套用在Ansible的模板裡
 有許多方式可以定義環境變數，以下簡單舉例：
 1. 直接寫在playbook中
-```
+```yaml
 vars:
     key_file: /etc/nginx/ssl/test.key
     cert_file: /etc/nginx/ssl/test.crt
@@ -173,23 +173,23 @@ vars:
 ```
 
 2. 定義一個變數檔案
-```
+```yaml
 vars_files:
     - nginx,yml
 ```
 
 3. 執行 playbook 的時候設定
-```
+```s
 $ ansible-playbook example.yml -e token=12345
 ```
 
 4. 使用 set_fact
-```
+```yaml
 - set_fact: app_version={{ example_app_versnio }}
 ```
 
 要在run-time確定目前的變數是甚麼，可用debug key來印出變數的值：
-```
+```yaml
 - name: Install path
     debug:
       msg: "Install path is {{ install_path }}."
@@ -203,11 +203,147 @@ Ansible的結構如果圖形化之後大致是長這樣：
 ![](https://i.imgur.com/EwzS2J3.png)[圖片出處](https://www.clickittech.com/tutorial/ansible-playbook-basic/)
 
 ### 實際上來跑跑看：
+#### 以我們的 Smart Dock 來當示範
 ```
-# Play: Install Smart Dock Server
+playbook/
+├─ inventory/
+│  ├─ smartdock.yml
+│  ├─ user.yml
+├─ roles/
+│  ├─ docker/
+│  │  ├─ default/
+│  │  ├─ handler/
+│  │  ├─ meta/
+│  │  ├─ tasks/
+│  │  ├─ test/
+│  │  ├─ vars/
+│  │  ├─ template/
+│  ├─ certificates/
+│  │  ├─ default/
+│  │  ├─ handler/
+│  │  ├─ meta/
+│  │  ├─ tasks/
+│  │  ├─ test/
+│  │  ├─ vars/
+│  │  ├─ template/
+│  ├─ smartdock/
+│  │  ├─ default/
+│  │  ├─ handler/
+│  │  ├─ meta/
+│  │  ├─ tasks/
+│  │  ├─ test/
+│  │  ├─ vars/
+│  │  ├─ template/
+├─ ansible.cfg
+├─ generate_self_signed_certificates.yml
+├─ setup_smartdock_host.yml
+├─ upgrade_smartdock_host.yml
+```
+#### Play: Generate Self-Signed Certificates
+```yaml
 - hosts: localhost  
-  become: yes
-  become_user: root
+  gather_facts: no
+
+  vars_files:
+  - "./inventory/smartdock.yml"
+  - [ "/etc/smart-dock/user.yml", "./inventory/user.yml"]
+
+  tasks:
+  - name: set current dir
+    shell: "pwd"
+    register: directory_out
+  
+  - set_fact: current_dir="{{ directory_out.stdout }}"
+  - set_fact: has_all_certs="True"
+
+  - name: Set previous CA path if exists
+    set_fact:
+      previous_ca_path="{{ install_path }}/certificates/self_signed_certs"
+    when: install_path|default(None)
+  
+  - name: Find previous certificates
+    find:
+      paths: "{{previous_ca_path}}/{{item}}"
+      patterns: "{{item}}"
+    register: filesFound
+    loop:
+      - "ca.key"
+      - "ca.pem"
+      - "client.key"
+      - "client.pem"
+      - "openssl.cnf"
+  
+  - name: Check if all certificates exist
+    set_fact:
+      has_all_certs="False"
+    when: item.matched == 0
+    loop: "{{ filesFound.results }}"
+
+  - name: Copy previous CA certificates
+    copy:
+      src: "{{previous_ca_path}}/{{item}}"
+      dest: "{{current_dir}}/certs/{{item}}"
+      mode: 0755
+    loop:
+      - "ca.key"
+      - "ca.pem"
+      - "ca.srl"
+      - "client.csr"
+      - "client.key"
+      - "client.pem"
+      - "openssl.cnf"
+    when: has_all_certs
+
+  - name: Generate rootca ca.key
+    command: "openssl genrsa -out {{current_dir}}/certs/ca.key 2048"
+    when: not has_all_certs
+
+  - name: Generate rootca ca.pem
+    command: "openssl req -x509 \
+      -new \
+      -nodes \
+      -sha256 \
+      -days 3650 \
+      -subj '/O={{auth_organization}}/CN={{instance_domain_name}}/emailAddress={{root_admin_email}}' \
+      -key {{current_dir}}/certs/ca.key \
+      -out {{current_dir}}/certs/ca.pem"
+    when: not has_all_certs
+  
+  - name: Generate client openssl.cnf
+    ansible.builtin.template:
+      src: "{{current_dir}}/inventory/templates/openssl.j2"
+      dest: "{{current_dir}}/certs/openssl.cnf"
+    when: not has_all_certs
+
+  - name: Generate server client.key
+    command: "openssl genrsa -out {{current_dir}}/certs/client.key 2048"
+    when: not has_all_certs
+  
+  - name: Generate server client.csr
+    command: "openssl req -new \      
+      -key {{current_dir}}/certs/client.key \
+      -config {{current_dir}}/certs/openssl.cnf \
+      -out {{current_dir}}/certs/client.csr"
+    when: not has_all_certs
+
+  - name: Generate server client.pem
+    command: "openssl x509 -req \
+      -in {{current_dir}}/certs/client.csr \
+      -CA {{current_dir}}/certs/ca.pem \
+      -CAkey {{current_dir}}/certs/ca.key \
+      -CAcreateserial \
+      -out {{current_dir}}/certs/client.pem \    
+      -days 3650 \
+      -sha256 \
+      -extensions v3_req \
+      -extfile {{current_dir}}/certs/openssl.cnf"
+    when: not has_all_certs
+```
+#### Play: Setup Smart Dock Host
+```yaml
+# Play: Install Smart Dock Host
+- hosts: localhost
+  gather_facts: no
 
   vars_files:
   - "./inventory/smartdock.yml"
@@ -320,6 +456,328 @@ Ansible的結構如果圖形化之後大致是長這樣：
       name: smartdock
       tasks_from: setup_smartdock_server
     tags: smartdock
+```
+#### Tasks File in Role: Smart Dock
+```yaml
+---
+# tasks file for smartdock
+- name: Install AWS CLI
+  import_role:      
+      name: smartdock
+      tasks_from: install_aws_cli
+  when: docker_storage == "aws"
+  
+- name: Log into a Docker Registry
+  docker_login:
+    username: "{{docker_hub_username}}"
+    password: "{{docker_hub_password}}"
+    email: "{{docker_hub_email}}"
+  when: docker_storage == "dockerhub"
+
+- name: Set user AWS access key id
+  shell: "aws configure set aws_access_key_id {{aws_access_key_id}} --profile user"
+  when: aws_access_key_id and aws_secret_access_key and docker_storage == "aws"
+
+- name: Set user AWS access key
+  shell: "aws configure set aws_secret_access_key {{aws_secret_access_key}} --profile user"
+  when: aws_access_key_id and aws_secret_access_key and docker_storage == "aws"
+
+- name: Set user AWS region
+  shell: "aws configure set region {{aws_region}} --profile user"
+  when: aws_access_key_id and aws_secret_access_key and docker_storage == "aws"
+
+- name: ecr docker get-authorization-token
+  shell: "aws ecr get-authorization-token --profile user --region {{aws_erc_region}}"
+  register: ecr_command
+  when: docker_storage == "aws"
+  
+- set_fact: ecr_authorization_data="{{ (ecr_command.stdout | from_json).authorizationData[0] }}"
+  when: docker_storage == "aws"
+  
+- set_fact: ecr_credentials="{{ (ecr_authorization_data.authorizationToken | b64decode).split(':') }}"
+  when: docker_storage == "aws"
+
+- name: Log into a ECR Docker Registry
+  docker_login:
+      registry_url: "{{ ecr_authorization_data.proxyEndpoint.rpartition('//')[2] }}"
+      username: "{{ ecr_credentials[0] }}"
+      password: "{{ ecr_credentials[1] }}"
+      reauthorize: yes
+  when: docker_storage == "aws"
+
+- name: pull emqx
+  docker_image:
+    name: emqx/emqx:{{emqx_version}}
+    source: pull
+  
+- name: Pull timescale DB
+  docker_image:
+    name: timescale/timescaledb-postgis:latest-pg12
+    source: pull
+
+- name: Pull minIO
+  docker_image:
+    name: quay.io/minio/minio:{{minio_version}}
+    source: pull
+  
+- set_fact: image_directory={{docker_hub_username}}
+  when: docker_storage == "dockerhub"
+
+- set_fact: restapi_folder="smartlocation-restapi-alpine"
+  when: docker_storage == "dockerhub"
+
+- set_fact: websocket_folder="smartlocation-websocket-alpine"
+  when: docker_storage == "dockerhub"
+
+- set_fact: image_directory={{aws_erc_repository}}
+  when: docker_storage == "aws"
+
+- set_fact: restapi_folder="smartdock-rest"
+  when: docker_storage == "aws"
+
+- set_fact: websocket_folder="websocket-alpine"
+  when: docker_storage == "aws"
+    
+- name: Pull restapi image
+  docker_image:
+    name: "{{image_directory}}/{{restapi_folder}}:{{restapi_version}}"
+    source: pull  
+
+- name: Pull websocket image
+  docker_image:
+    name: "{{image_directory}}/{{websocket_folder}}:{{websocket_version}}"
+    source: pull
+
+- name: Pull device-routing image
+  docker_image:
+    name: "{{image_directory}}/devicerouting:{{devicerouting_version}}"
+    source: pull
+  
+- name: Pull website image
+  docker_image:
+    name: "{{image_directory}}/smartdock-web:{{web_version}}"
+    source: pull
+
+- name: Pull admin site image
+  docker_image:
+    name: "{{image_directory}}/smartdock-admin-site:{{admin_site_version}}"
+    source: pull
+
+- name: Pull node-cron image
+  docker_image:
+    name: "{{image_directory}}/smartlocation-node-cron:{{cron_version}}"
+    source: pull
+
+- name: Create folder ascii tree
+  import_role:      
+    name: smartdock
+    tasks_from: create_ascii_tree
+
+- name: Create config.json
+  import_role:      
+    name: smartdock
+    tasks_from: generate_jsons
+
+- name: Create tokens if not exist
+  import_role:      
+    name: smartdock
+    tasks_from: generate_tokens
+
+- name: Copy files
+  copy:
+    src: "../templates/{{item}}"
+    dest: "{{ install_path }}/smart-dock/certificates/aws_certs/{{item}}"
+    mode: 0755
+  loop:      
+    - "AmazonRootCA1.pem"
+    - "IotCoreMQTTCert.pem.crt"
+    - "IotCoreMQTTPrivate.pem.key" 
+
+- name: Copy self-signed certificates into install path
+  copy:
+    src: "{{current_dir}}/certs/{{item}}"
+    dest: "{{ install_path }}/smart-dock/certificates/self_signed_certs/{{item}}"
+    mode: 0755
+  loop:
+    - "ca.key"
+    - "ca.pem"
+    - "ca.srl"
+    - "client.csr"
+    - "client.key"
+    - "client.pem"
+    - "openssl.cnf"
+
+- set_fact: port={{portal_port}}
+
+- name: Create portal_nginx.conf from template
+  ansible.builtin.template:
+    src: ../templates/nginx.j2
+    dest: "{{ install_path }}/smart-dock/env/portal_nginx.conf"
+
+- set_fact: port={{admin_site_port}}
+
+- name: Create admin_site_nginx.conf from template
+  ansible.builtin.template:
+    src: ../templates/nginx.j2
+    dest: "{{ install_path }}/smart-dock/env/admin_site_nginx.conf"
+
+- name: Create env files from template
+  ansible.builtin.template:
+    src: ../templates/{{item}}.j2
+    dest: "{{ install_path }}/smart-dock/env/{{item}}.env"
+  loop:
+    - "emqx"
+    - "websocket"
+    - "restapi"
+    - "timescale"    
+    - "device_routing"
+    - "cron_30min"
+    - "cron_1min"
+    - "minio"
+
+- name: Create compose file from template
+  ansible.builtin.template:
+    src: ../templates/docker-compose_letsencrypt.j2
+    dest: "{{ install_path }}/smart-dock/docker-compose.yml"
+  when: certificate == "letsencrypt"
+
+- name: Create compose file from template
+  ansible.builtin.template:
+    src: ../templates/docker-compose_self-signed.j2
+    dest: "{{ install_path }}/smart-dock/docker-compose.yml"
+  when: certificate == "self-signed"
+
+- name: Create utility files from template
+  ansible.builtin.template:
+    src: ../templates/healthCheck.j2
+    dest: "{{ install_path }}/smart-dock/scripts/healthCheck.sh"
+
+- name: Launch container by docker compose
+  community.docker.docker_compose:
+    project_src: "{{ install_path }}/smart-dock"
+
+- name: Make sure certificates are accessible
+  command: docker exec smartdock-emqx sudo chmod 755 -R /home
+  become: true
+  become_method: sudo
+
+- name: Wait until emqx is healthy (please ignore failed messages)
+  community.docker.docker_container_info:
+    name: smartdock-emqx
+  register: emqxhealth
+  until: emqxhealth.container['State']['Health']['Status'] == "healthy"
+  # until: smartdock-emqx-status.exists
+  delay: 10
+  retries: 10
+  ignore_errors: true
+
+- name: Print status
+  ansible.builtin.debug:
+    msg: "MQTT's health is {{ emqxhealth.container['State']['Health']['Status'] }}"
+  when: emqxhealth.container['State']['Health']['Status'] == "healthy" or emqxhealth.container['State']['Health']['Status'] == "unhealthy"
+
+- name: Restart restapi
+  command: docker restart smartdock-restapi
+  become: true
+  become_method: sudo
+  when: emqxhealth.container['State']['Health']['Status'] == "healthy"
+
+- name: Restart websocket
+  command: docker restart smartdock-websocket
+  become: true
+  become_method: sudo
+  when: emqxhealth.container['State']['Health']['Status'] == "healthy"
+
+- name: Stop container by docker compose down
+  community.docker.docker_compose:
+    project_src: "{{ install_path }}/smart-dock"
+    state: absent
+  when: emqxhealth.container['State']['Health']['Status'] == "unhealthy"
+
+- name: Restart container by docker compose
+  community.docker.docker_compose:
+    project_src: "{{ install_path }}/smart-dock"
+  when: emqxhealth.container['State']['Health']['Status'] == "unhealthy"
+
+- name: Creates a cron file under /etc/cron.d
+  ansible.builtin.cron:
+    name: smartdock-cron-job-30-min
+    minute: "0,30"
+    user: root
+    job: "docker start smartdock-cron-30-min"
+    cron_file: smartdock-cron-job
+
+- name: Creates a cron file under /etc/cron.d
+  ansible.builtin.cron:
+    name: smartdock-cron-job-1-min
+    minute: "*"
+    user: root
+    job: "docker start smartdock-cron-1-min"
+    cron_file: smartdock-cron-job
+
+- name: Creates postgres backup folder
+  file:
+    path: "{{ install_path }}/smart-dock/backups"
+    state: directory
+    mode: '0755'  
+
+- name: Generate scripts in scripts folder
+  ansible.builtin.template:
+    src: "./scripts/{{item}}.j2"
+    dest: "{{ install_path }}/smart-dock/scripts/{{item}}.sh"
+    mode: '0755'
+    force: true
+  loop:
+    - "backup"
+    - "recovery"
+    - "uninstall"
+
+- name: Copy scripts to scripts folder
+  copy:
+    src: "./scripts/{{item}}.sh"
+    dest: "{{ install_path }}/smart-dock/scripts/{{item}}.sh"
+    mode: '0755'
+    force: true
+  loop:
+    - "checkStatuses"
+
+- name: Creates a cron file under /etc/cron.d for database backup (DEBUG MODE)
+  ansible.builtin.cron:
+    name: smartdock-database-backup-cron-job
+    minute: "0,10,20,30,40,50"
+    user: root
+    job: "bash {{ install_path }}/smart-dock/scripts/backup.sh"
+    cron_file: smartdock-cron-job
+  when: backup_freq == "debug"
+
+- name: Creates a cron file under /etc/cron.d for database backup (Daily)
+  ansible.builtin.cron:
+    name: smartdock-database-backup-cron-job
+    hour: "5"
+    minute: "0"
+    user: root
+    job: "bash {{ install_path }}/smart-dock/scripts/backup.sh"
+    cron_file: smartdock-cron-job
+  when: backup_freq == "daily"
+
+- name: Creates a cron file under /etc/cron.d for database backup (Weekly)
+  ansible.builtin.cron:
+    name: smartdock-database-backup-cron-job
+    weekday: "6"
+    hour: "5"
+    minute: "0"
+    user: root
+    job: "bash {{ install_path }}/smart-dock/scripts/backup.sh"
+    cron_file: smartdock-cron-job
+  when: backup_freq == "weekly"
+
+- name: Creates a cron file to check system health regularly
+  ansible.builtin.cron:
+    name: smartdock-healthcheck-cron-job    
+    minute: "10,25,40,55"
+    user: root
+    job: "bash {{ install_path }}/smart-dock/scripts/healthCheck.sh"
+    cron_file: smartdock-cron-job
 ```
 
 ## Reference
