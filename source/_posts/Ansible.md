@@ -91,6 +91,7 @@ graph LR;
 :::warning
 Ansible 是一套以 Python 為基底開發的組態管理工具
 :::
+The Philotic Parallax Instantaneous Communicator
 ![](https://i.imgur.com/PyzqnDN.jpg)
 
 ### Ansible的優點：
@@ -202,7 +203,7 @@ $ ansible-playbook example.yml -e token=12345
 Ansible的結構如果圖形化之後大致是長這樣：
 ![](https://i.imgur.com/EwzS2J3.png)[圖片出處](https://www.clickittech.com/tutorial/ansible-playbook-basic/)
 
-### 實際上來跑跑看：
+## 實際上來跑跑看：
 ### 以我們的 Smart Dock 來當示範
 ```
 playbook/
