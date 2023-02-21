@@ -203,7 +203,124 @@ Ansible的結構如果圖形化之後大致是長這樣：
 ![](https://i.imgur.com/EwzS2J3.png)[圖片出處](https://www.clickittech.com/tutorial/ansible-playbook-basic/)
 
 ### 實際上來跑跑看：
+```
+# Play: Install Smart Dock Server
+- hosts: localhost  
+  become: yes
+  become_user: root
 
+  vars_files:
+  - "./inventory/smartdock.yml"
+  - [ "/etc/smart-dock/user.yml", "./inventory/user.yml"]
+
+  tasks:  
+  - name: set current dir
+    shell: "pwd"
+    register: directory_out
+  
+  - set_fact: current_dir="{{ directory_out.stdout }}"  
+
+  - fail:
+      msg: Cannot find AWS access key ID and secret access key
+    when: not aws_access_key_id|default(None) or not aws_secret_access_key|default(None)
+
+  - name: Set install path
+    pause:
+      prompt: "Please specify your install path (default: /usr/local)"      
+    register: install_path_input
+    when: not install_path|default(None)
+
+  - name: Set install path
+    set_fact: 
+      install_path="{{ install_path_input.user_input }}"
+    when: not install_path|default(None)
+
+  # If user press enter and skip the previous step
+  - name: Set install path
+    set_fact:
+      install_path="/usr/local"
+    when: not install_path|default(None)
+  
+  - name: Install path
+    debug:
+      msg: "Install path is {{ install_path }}."
+
+  - name: create config directory
+    file:
+      path: "/etc/smart-dock"
+      state: directory
+      mode: '0755'
+
+  - name: Save user configs
+    ansible.builtin.template:
+      src: "{{ current_dir }}/inventory/templates/user.j2"
+      dest: "/etc/smart-dock/user.yml"
+      mode: '0755'
+      force: true
+
+  - name: Check if certificates exist
+    find:
+      paths: ./certs
+      patterns: "{{item}}"
+    register: filesFound
+    loop:
+      - "ca.key"
+      - "ca.pem"
+      - "client.key"
+      - "client.pem"
+      - "openssl.cnf"
+
+  - fail:
+     msg: Cannot find self-signed certificates 
+    when: item.matched == 0
+    loop: "{{ filesFound.results }}"
+
+  # Installing Packages
+  - name: Install pip3
+    apt:
+      name: python3-pip
+      state: latest
+      update_cache: true
+
+  - name: Upgrade pip
+    pip:
+      name: pip
+      extra_args: --upgrade
+      executable: pip3
+
+  - name: Install boto3 python library
+    pip:
+      name: boto3
+      state: present
+    tags: services
+
+  - name: Install boto python library
+    pip:
+      name: boto
+      state: present
+    tags: services
+
+  # Import Role: Docker
+  - name: Install and start docker service
+    include_role:      
+      name: docker
+    tags: services
+  
+  # Import Role: Certificates
+  - name: create letsencrypt certificates
+    import_role:
+      name: certificates
+      tasks_from: letsencrypt_webroot
+    when: certificate == "letsencrypt"
+    tags: [services, certs]
+
+  # Import Role: Smart Dock
+  - name: Install smartdock server
+    import_role:      
+      name: smartdock
+      tasks_from: setup_smartdock_server
+    tags: smartdock
+```
 
 ## Reference
 [Ansible Documentation](https://docs.ansible.com/ansible/latest/dev_guide/index.html);<br/>
