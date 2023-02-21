@@ -103,15 +103,15 @@ Ansible 是一套以 Python 為基底開發的組態管理工具
 ## How to use Ansible
 
 ### Ansible的基本架構：
-#### Playbook
+### Playbook
 Playbook是Ansible世界的一個專有名詞，
 代表Ansible用來配置組態的一個腳本，以YAML來進行撰寫。
-#### Plays
+### Plays
 Playbook由一連串的plays所組成，
 每個Play包含：
 * 一組想要進行組態配置的==主機(hosts)==
 * 要在這些主機上執行的一系列==任務(tasks)==
-#### Tasks
+### Tasks
 Task為組成一個Playbook的最小單位，每個Task都必須包含一個==Key==。
 Key代表了模組(module)的名稱以及要傳遞到模組的參數值。
 
@@ -129,7 +129,7 @@ Key代表了模組(module)的名稱以及要傳遞到模組的參數值。
 其中name是完全optional的，但是寫出來可讓同事(以及半年後的自己)比較能了解這個task的目的是甚麼。
 apt就是前面講的key，表示我們要用apt這個模組來下達指令
 
-#### Modules
+### Modules
 Module為Ansible原生已經包裝好的腳本，常見的有：
 * apt: 使用apt套件管理員安裝或移除套件
 * copy: 從本地機器複製檔案到本機其他位置或是其他主機
@@ -143,7 +143,7 @@ $apt install {{package1}} {{package2}} {{package3}}... --latest
 
 Ansible原生沒有包含的模組也可以用plugin的形式來擴充
 
-#### Plugins
+### Plugins
 就如同許多開源專案一樣，許多你想用的功能都已經有其他人幫你寫好了，只要下載下來安裝就可以使用。
 例如常見的docker：
 ```yaml
@@ -156,12 +156,12 @@ Ansible原生沒有包含的模組也可以用plugin的形式來擴充
 
 docker前面的==community==就表示這是由開源社群所撰寫的plugin。
 
-#### Roles
+### Roles
 隨著管理的規模和複雜度越來越高，Ansible也提供使用者可以用role來區分包裝不同的tasks
 讓管理pipeline和task間的相依性更加容易
 甚至使用者還可以去[Ansible Galaxy](https://galaxy.ansible.com/home)來下載其他人已經定義好的role來直接套用在專案使用。
 
-#### Facts (or Vars?)
+### Facts (or Vars?)
 使用者可以自訂義環境變數來套用在Ansible的模板裡
 有許多方式可以定義環境變數，以下簡單舉例：
 1. 直接寫在playbook中
@@ -198,12 +198,12 @@ $ ansible-playbook example.yml -e token=12345
 :bulb: 定義變數的方式不同，其優先程度也不相同，例如直接用command line送進去的變數就會覆蓋掉playbook裡面原本有寫的變數
 :::
 
-#### Anisble的結構
+### Anisble的結構
 Ansible的結構如果圖形化之後大致是長這樣：
 ![](https://i.imgur.com/EwzS2J3.png)[圖片出處](https://www.clickittech.com/tutorial/ansible-playbook-basic/)
 
 ### 實際上來跑跑看：
-#### 以我們的 Smart Dock 來當示範
+### 以我們的 Smart Dock 來當示範
 ```
 playbook/
 ├─ inventory/
@@ -239,7 +239,7 @@ playbook/
 ├─ setup_smartdock_host.yml
 ├─ upgrade_smartdock_host.yml
 ```
-#### Play: Generate Self-Signed Certificates
+### Play: Generate Self-Signed Certificates
 ```yaml
 - hosts: localhost  
   gather_facts: no
@@ -339,7 +339,7 @@ playbook/
       -extfile {{current_dir}}/certs/openssl.cnf"
     when: not has_all_certs
 ```
-#### Play: Setup Smart Dock Host
+### Play: Setup Smart Dock Host
 ```yaml
 # Play: Install Smart Dock Host
 - hosts: localhost
@@ -457,7 +457,7 @@ playbook/
       tasks_from: setup_smartdock_server
     tags: smartdock
 ```
-#### Tasks File in Role: Smart Dock
+### Tasks File in Role: Smart Dock
 ```yaml
 ---
 # tasks file for smartdock
@@ -666,7 +666,6 @@ playbook/
     name: smartdock-emqx
   register: emqxhealth
   until: emqxhealth.container['State']['Health']['Status'] == "healthy"
-  # until: smartdock-emqx-status.exists
   delay: 10
   retries: 10
   ignore_errors: true
