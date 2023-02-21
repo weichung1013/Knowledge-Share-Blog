@@ -239,105 +239,25 @@ playbook/
 ├─ setup_smartdock_host.yml
 ├─ upgrade_smartdock_host.yml
 ```
-### Play: Generate Self-Signed Certificates
-```yaml
-- hosts: localhost  
-  gather_facts: no
+### Config: ansible.cfg
+```sh
+[defaults]
+host_key_checking = false
+remote_user = ubuntu
+ask_pass = false
+roles_path = ./roles
+inventory = hosts
+display_skipped_hosts = false
+# logs
+log_path = ./ansible_logs/setup_logs
 
-  vars_files:
-  - "./inventory/smartdock.yml"
-  - [ "/etc/smart-dock/user.yml", "./inventory/user.yml"]
-
-  tasks:
-  - name: set current dir
-    shell: "pwd"
-    register: directory_out
-  
-  - set_fact: current_dir="{{ directory_out.stdout }}"
-  - set_fact: has_all_certs="True"
-
-  - name: Set previous CA path if exists
-    set_fact:
-      previous_ca_path="{{ install_path }}/certificates/self_signed_certs"
-    when: install_path|default(None)
-  
-  - name: Find previous certificates
-    find:
-      paths: "{{previous_ca_path}}/{{item}}"
-      patterns: "{{item}}"
-    register: filesFound
-    loop:
-      - "ca.key"
-      - "ca.pem"
-      - "client.key"
-      - "client.pem"
-      - "openssl.cnf"
-  
-  - name: Check if all certificates exist
-    set_fact:
-      has_all_certs="False"
-    when: item.matched == 0
-    loop: "{{ filesFound.results }}"
-
-  - name: Copy previous CA certificates
-    copy:
-      src: "{{previous_ca_path}}/{{item}}"
-      dest: "{{current_dir}}/certs/{{item}}"
-      mode: 0755
-    loop:
-      - "ca.key"
-      - "ca.pem"
-      - "ca.srl"
-      - "client.csr"
-      - "client.key"
-      - "client.pem"
-      - "openssl.cnf"
-    when: has_all_certs
-
-  - name: Generate rootca ca.key
-    command: "openssl genrsa -out {{current_dir}}/certs/ca.key 2048"
-    when: not has_all_certs
-
-  - name: Generate rootca ca.pem
-    command: "openssl req -x509 \
-      -new \
-      -nodes \
-      -sha256 \
-      -days 3650 \
-      -subj '/O={{auth_organization}}/CN={{instance_domain_name}}/emailAddress={{root_admin_email}}' \
-      -key {{current_dir}}/certs/ca.key \
-      -out {{current_dir}}/certs/ca.pem"
-    when: not has_all_certs
-  
-  - name: Generate client openssl.cnf
-    ansible.builtin.template:
-      src: "{{current_dir}}/inventory/templates/openssl.j2"
-      dest: "{{current_dir}}/certs/openssl.cnf"
-    when: not has_all_certs
-
-  - name: Generate server client.key
-    command: "openssl genrsa -out {{current_dir}}/certs/client.key 2048"
-    when: not has_all_certs
-  
-  - name: Generate server client.csr
-    command: "openssl req -new \      
-      -key {{current_dir}}/certs/client.key \
-      -config {{current_dir}}/certs/openssl.cnf \
-      -out {{current_dir}}/certs/client.csr"
-    when: not has_all_certs
-
-  - name: Generate server client.pem
-    command: "openssl x509 -req \
-      -in {{current_dir}}/certs/client.csr \
-      -CA {{current_dir}}/certs/ca.pem \
-      -CAkey {{current_dir}}/certs/ca.key \
-      -CAcreateserial \
-      -out {{current_dir}}/certs/client.pem \    
-      -days 3650 \
-      -sha256 \
-      -extensions v3_req \
-      -extfile {{current_dir}}/certs/openssl.cnf"
-    when: not has_all_certs
+# grant root power
+[privilege_escalation]
+become = true
+become_method = sudo
+become_user = root
+become_ask_pass = false
+display_skipped_hosts = false
 ```
 ### Play: Setup Smart Dock Host
 ```yaml
