@@ -96,8 +96,10 @@ The Philotic Parallax Instantaneous Communicator
 
 ### Ansible的優點：
 * 免費: Anisble是一套免費的開源工具 (Redhat的AAP和Ansible Tower則是收費工具)。
+* 社群資源多: ，可用外掛的方式來擴充官方沒支援的功能，也能在[Ansible Galaxy](https://galaxy.ansible.com/home)下載其他人做好的Role。
 * 模板化的設計: Anisble主要使用==YAML==和==Jinja2==模板語法來進行撰寫，可重複使用模板搭配不同的環境變數來執行各種IT工作。
 * 不需在每個節點上安裝： 被控制的節點只需要安裝Python和SSH就可以統一由控制節點來進行控管，節省資源與時間。
+* 擴充性： 可以在小型佈署上使用，也能擴充到管理多個節點的複雜、大型服務。
 * 易讀易懂：如前述所說，Ansible playbook (後面會在說明playbook是甚麼)的語法為YAML，YAML一開始就是被設計成容易編寫和閱讀的(雖然有些人會不認同XD)。
 * 容易學習：只需要了解如何在Linux環境下工作以及理解如何使用SSH操控遠端機器就可以使用。
 
