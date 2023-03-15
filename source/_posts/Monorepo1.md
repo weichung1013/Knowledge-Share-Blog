@@ -218,7 +218,7 @@ apps/app-b/* @bob
 ```
 這時候當 pull request 發給 App A時，只有Susan會收到通知，而當PR發給App B時，則只有Bob需要回覆。
 
-## Monorepo的挑戰
+## Monorepo 的挑戰
 Monorepo工具Nx的作者，Victor Savkin有整理一些採用Monorepo團隊會遇到的挑戰：
 1. Trunk-based development
 Monorepo和許多團隊慣用的branch分支開發並不是很合，所以團隊必須考慮切換為trunk-based的開發方式。
@@ -230,7 +230,7 @@ Continuous integreation的流程可能要重新思考，因為你不再是建構
 4. Large-scale changes
 但改動一個共用元件時，可能會影響到所有的apps，所以當進行這種大幅度改動時，必須考慮到backward-compatibility，例如可能必須準備兩個不同版本的parameter/methods/class/package，讓所有開發人員都有時間能從舊版移動到新版。
 
-## 何時該使用Monorepo?
+## 何時該使用 Monorepo?
 引用Sunner。桑莫整理的[表格](https://www.cythilya.tw/2023/01/28/monolith-vs-multi-repo-vs-mono-repo/)
 
 | #        | Monolith                  | Polyrepo                  | Monorepo                               |
@@ -241,7 +241,7 @@ Continuous integreation的流程可能要重新思考，因為你不再是建構
 | 工具     | -                         | -                         | Nx, Lerna, Bazel等等 |
 | 適用情境  | 產品開發初期或<br/>非大型規模專案 | 切分大型專案、<br/>相依和共享狀況<br/>少 | 切分大型專案、<br/>相依和共享狀況<br/>多 |
 
-## Monrepo常用的工具：
+## Monorepo 常用的工具：
 [Monorepo Tools](https://monorepo.tools/#monorepo-tools)
 
 ## 下期預告
