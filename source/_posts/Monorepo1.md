@@ -135,7 +135,7 @@ Polyrepo最大的好處就是團隊的獨立性，但是獨立性往往卻傷害
 ### Monorepo
 ![](https://i.imgur.com/4teD3ca.png)
 
-根據[Monorepo Tools](https://monorepo.tools/#local-computation-caching)，其定義為：
+根據[Monorepo Tools](https://monorepo.tools/#understanding-monorepos)，其定義為：
 > A monorepo is a single repository containing multiple distinct projects, with well-defined relationships.<br/>
 
 和Monolith相同的，Monorepo同樣將所有專案放在同一個repo內。
@@ -189,6 +189,7 @@ Monorepo 將個別功能放在同一 repo 的不同 package 底下，如前面�
 
 和Monolith不同的地方可用下圖表示：
 ![](https://i.imgur.com/nw4ft6P.png)
+![](https://i.imgur.com/Ba5Wr2b.png)
 
 簡單來說，Monorepo就是模組化(modular)之後的Monolith。
 
@@ -208,6 +209,7 @@ Monorepo 將個別功能放在同一 repo 的不同 package 底下，如前面�
 ![](https://i.imgur.com/O2e9sgR.png)
 
 解法：許多Monorepo的工具都可以針對檔案的visibility做出限制，以免不同團隊將不屬於自己App的檔案設到package.json中。
+
 4. 開發人員眾多時難以控管檔案權限，無法針對 package 來限制誰能瀏覽或編輯，同時也會反應到開 issue、回覆 PR 和通知過於紊亂的問題上。
 解法：[Github Code Owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners)，可以針對不同檔案給予不同人權限。例如：
 ```
@@ -231,7 +233,6 @@ Continuous integreation的流程可能要重新思考，因為你不再是建構
 ## 何時該使用Monorepo?
 引用Sunner。桑莫整理的[表格](https://www.cythilya.tw/2023/01/28/monolith-vs-multi-repo-vs-mono-repo/)
 
-
 | #        | Monolith                  | Polyrepo                  | Monorepo                               |
 | -------- | --------                  | --------                  | --------                               |
 | 特色     | 將所有的功能放<br/>在單一repo | 將個別功能放在<br/>不同 repo | 將個別功能放在<br/>同一 repo 的不同 package |
@@ -240,12 +241,15 @@ Continuous integreation的流程可能要重新思考，因為你不再是建構
 | 工具     | -                         | -                         | Nx, Lerna, Bazel等等 |
 | 適用情境  | 產品開發初期或<br/>非大型規模專案 | 切分大型專案、<br/>相依和共享狀況<br/>少 | 切分大型專案、<br/>相依和共享狀況<br/>多 |
 
+## Monrepo常用的工具：
+[Monorepo Tools](https://monorepo.tools/#monorepo-tools)
+
 ## 下期預告
 1. 建立Vue3+Typescript的Monorepo專案
 2. 可能會挑一個Monorepo工具來玩玩看(NX? Lerna? Bazel?)
 ## Reference
 [該用 Monorepo 嗎？比較 Monolith vs Multi-Repo vs Monorepo](https://www.cythilya.tw/2023/01/28/monolith-vs-multi-repo-vs-mono-repo/);<br/>
-[Monorepo Tools](https://monorepo.tools/#local-computation-caching);<br/>
+[Monorepo Tools](https://monorepo.tools/#monorepo-tools);<br/>
 [Misconceptions about Monorepos: Monorepo != Monolith](https://blog.nrwl.io/misconceptions-about-monorepos-monorepo-monolith-df1250d4b03c);<br/>
 [Sharing code between web and native projects of React in a Monorepo](https://medium.com/@ksholla20/sharing-code-between-web-and-native-projects-of-react-in-a-monorepo-5b6e3b09d315);<br/>
 ###### tags: `monorepo`,`vue`,`note`
