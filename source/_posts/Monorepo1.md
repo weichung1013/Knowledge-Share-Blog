@@ -5,8 +5,6 @@ tags: monorepo,vue,note
 ---
 # Monorepo 簡介
 
-## What is Monorepo
-
 ## Monolith vs Polyrepo vs Monorepo
 ![](https://i.imgur.com/RXbWoHU.png)
 
@@ -206,7 +204,9 @@ Monorepo 將個別功能放在同一 repo 的不同 package 底下，如前面�
 
 2. 公用和非共用要切分清楚，共用的package和元件要放在共用資料夾內，不可隨意引用其他app的原件以免相依性亂掉。
 3. 要注意package version hoist的狀況，以防node module的size爆掉...
+
 ![](https://i.imgur.com/O2e9sgR.png)
+
 解法：許多Monorepo的工具都可以針對檔案的visibility做出限制，以免不同團隊將不屬於自己App的檔案設到package.json中。
 4. 開發人員眾多時難以控管檔案權限，無法針對 package 來限制誰能瀏覽或編輯，同時也會反應到開 issue、回覆 PR 和通知過於紊亂的問題上。
 解法：[Github Code Owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners)，可以針對不同檔案給予不同人權限。例如：
